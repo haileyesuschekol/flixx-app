@@ -50,12 +50,14 @@ const displayPopularMovies = async () => {
 const displayTvShow = async () => {
   const { results } = await fetchApi("tv/popular")
 
+  console.log(results)
+
   results.forEach((show) => {
     const div = document.createElement("div")
     div.classList.add("card")
 
     div.innerHTML = `
-    <a href="movie-details.html?id=${show.id}">
+    <a href="tv-details.html?id=${show.id}">
    ${
      show.poster_path
        ? `<img
@@ -151,6 +153,77 @@ const displayMovieDetail = async () => {
   document.querySelector("#movie-details").appendChild(div)
 }
 
+//show tv show details
+
+const displayTvShowDetail = async () => {
+  const showId = window.location.search.split("=")[1]
+  const tvShow = await fetchApi(`tv/${showId}`)
+
+  console.log(global.currnetPage)
+  console.log(showId)
+
+  //display background image
+  displayBackgroundImage("show", tvShow.backdrop_path)
+
+  const div = document.createElement("div")
+
+  div.innerHTML = ` <div class="details-top">
+          <div>
+            ${
+              tvShow.poster_path
+                ? `<img
+         src="https://image.tmdb.org/t/p/w500${tvShow.poster_path}"
+         class="card-img-top"
+         alt="${tvShow.name}"
+       />`
+                : `<img
+         src="../images/no-image.jpg"
+         class="card-img-top"
+         alt="${tvShow.name}"
+       />`
+            }
+          </div>
+          <div>
+            <h2>${tvShow.name}</h2>
+            <p>
+              <i class="fas fa-star text-primary"></i>
+              ${tvShow.vote_average} / 10
+            </p>
+            <p class="text-muted">Release Date: ${tvShow.release_date}</p>
+            <p>
+             ${tvShow.overview}
+            </p>
+            <h5>Genres</h5>
+            <ul class="list-group">
+              ${tvShow.genres.map((gener) => `<li>${gener.name}</li>`).join("")}
+            </ul>
+            <a href="${
+              tvShow.homepage
+            }" target="_blank" class="btn">Visit Movie Homepage</a>
+          </div>
+        </div>
+        <div class="details-bottom">
+          <h2>Show Info</h2>
+          <ul>
+            <li><span class="text-secondary">Number of Episod: </span>${
+              tvShow.number_of_episodes
+            } </li>
+            <li><span class="text-secondary">Last Episode To Air: </span>${
+              tvShow.last_episode_to_air.name
+            } </li>
+            <li><span class="text-secondary">Status:</span> ${
+              tvShow.status
+            }</li>
+          </ul>
+          <h4>Production Companies</h4>
+          <div class="list-group"> ${tvShow.production_companies
+            .map((company) => `<span>${company.name}</span>`)
+            .join("")}</div>
+        </div>`
+
+  document.querySelector("#show-details").appendChild(div)
+}
+
 const displayBackgroundImage = (type, backdrop_path) => {
   const overlayDiv = document.createElement("div")
   overlayDiv.style.backgroundImage = `URL(
@@ -201,10 +274,10 @@ const init = () => {
       break
     case "/shows.html":
       displayTvShow()
-      console.log("worked")
       break
     case "/tv-details.html":
-      console.log("Tv detail")
+      displayTvShowDetail()
+      console.log("tv detail")
       break
     case "/search.html":
       console.log("Search")
