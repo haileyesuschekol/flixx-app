@@ -5,6 +5,7 @@ const global = {
     type: "",
     page: 1,
     totalPages: 1,
+    totalResult: 0,
   },
   api: {
     API_KEY: `a29e88b1702b3a749bc5ac22ab8f3975`,
@@ -52,15 +53,11 @@ const displayPopularMovies = async () => {
           </div>`
     document.querySelector("#popular-movies").appendChild(div)
   })
-
-  console.log(results)
 }
 
 //display tv shows
 const displayTvShow = async () => {
   const { results } = await fetchApi("tv/popular")
-
-  console.log(results)
 
   results.forEach((show) => {
     const div = document.createElement("div")
@@ -90,8 +87,6 @@ const displayTvShow = async () => {
           </div>`
     document.querySelector("#popular-shows").appendChild(div)
   })
-
-  console.log(results)
 }
 
 // search movies / tv shows
@@ -102,7 +97,10 @@ const search = async () => {
   global.search.term = urlParams.get("search-term")
 
   if (global.search.term !== "" && global.search.term !== null) {
-    const { results, total_Pages, pages } = await searchApiData()
+    const { results, total_pages, page, total_results } = await searchApiData()
+    global.search.page = page
+    global.search.totalPages = total_pages
+    global.search.totalResult = total_results
     if (results.lenght === 0) {
       showAlert("No result found")
       return
@@ -115,6 +113,9 @@ const search = async () => {
 }
 
 const displaySerchResults = (results) => {
+  document.querySelector("#search-results").innerHTML = ""
+  document.querySelector("#search-results-heading").innerHTML = ""
+  document.querySelector("#pagination").innerHTML = ""
   results.forEach((result) => {
     const div = document.createElement("div")
     div.classList.add("card")
@@ -147,7 +148,50 @@ const displaySerchResults = (results) => {
               }</small>
             </p>
           </div>`
+    document.querySelector("#search-results-heading").innerHTML = `
+    <h3>${results.length} of ${global.search.totalResult} Results for ${global.search.term}</h3>
+    `
     document.querySelector("#search-results").appendChild(div)
+  })
+
+  displayPagination()
+}
+
+//create & display pagination
+
+const displayPagination = () => {
+  const div = document.createElement("div")
+  div.classList.add("pagination")
+  div.innerHTML = `
+      <button class="btn btn-primary" id="prev">Prev</button>
+      <button class="btn btn-primary" id="next">Next</button>
+      <div class="page-counter">Page ${global.search.page} of ${global.search.totalPages}</div>
+  `
+  document.querySelector("#pagination").appendChild(div)
+
+  // disable prev button if on first page
+
+  if (global.search.page === 1) {
+    document.querySelector("#prev").disabled = true
+  }
+
+  //disable next button if one last page
+
+  if (global.search.page === global.search.totalPages) {
+    document.querySelector("#next").disabled = true
+  }
+
+  //next page
+  document.querySelector("#next").addEventListener("click", async () => {
+    global.search.page++
+    const { results, total_pages } = await searchApiData()
+    displaySerchResults(results)
+  })
+
+  document.querySelector("#prev").addEventListener("click", async () => {
+    global.search.page--
+    const { results, total_pages } = await searchApiData()
+    displaySerchResults(results)
   })
 }
 
@@ -267,9 +311,6 @@ const displayTvShowDetail = async () => {
   const showId = window.location.search.split("=")[1]
   const tvShow = await fetchApi(`tv/${showId}`)
 
-  console.log(global.currnetPage)
-  console.log(showId)
-
   //display background image
   displayBackgroundImage("show", tvShow.backdrop_path)
 
@@ -366,10 +407,10 @@ const searchApiData = async (endpoint) => {
   const URL = global.api.URL
   showSpinner()
   const response = await fetch(
-    `${URL}search/${global.search.type}?api_key=${API_KEY}&language=en-US&query=${global.search.term}`
+    `${URL}search/${global.search.type}?api_key=${API_KEY}&language=en-US&query=${global.search.term}&page=${global.search.page}`
   )
 
-  const data = response.json()
+  const data = await response.json()
   hideSpinner()
   return data
 }
@@ -411,7 +452,6 @@ const init = () => {
       break
     case "/tv-details.html":
       displayTvShowDetail()
-      console.log("tv detail")
       break
     case "/search.html":
       search()
